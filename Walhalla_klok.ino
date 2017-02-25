@@ -134,6 +134,44 @@ void clockTrigger() {
       }
     }
   }
+  if (clockTime[0] == 4 && clockTime[1] < 15)
+  {
+    analogWrite(PWM_R, 0);
+    analogWrite(PWM_G, 255);
+    analogWrite(PWM_B, 255);
+  }
+  else if (clockTime[0] == 4 && clockTime[1] < 30)
+  {
+    analogWrite(PWM_R, 0);
+    analogWrite(PWM_G, 200);
+    analogWrite(PWM_B, 255);
+  }
+  else if (clockTime[0] == 4 || clockTime[0] == 5 || (clockTime[0] == 6 && clockTime[1] < 30))
+  {
+    analogWrite(PWM_R, 255);
+    analogWrite(PWM_G, 0);
+    analogWrite(PWM_B, 255);
+  }
+  else if (clockTime[0] == 6 && clockTime[1] < 40)
+  {
+    analogWrite(PWM_R, 0);
+    analogWrite(PWM_G, 200);
+    analogWrite(PWM_B, 255);
+  }
+    else if (clockTime[0] == 6)
+  {
+    analogWrite(PWM_R, 0);
+    analogWrite(PWM_G, 255);
+    analogWrite(PWM_B, 255);
+  }
+  else
+  {
+    analogWrite(PWM_R, 255);
+    analogWrite(PWM_G, 255);
+    analogWrite(PWM_B, 255);
+  }
+
+
 }
 
 void timeCheck() {
