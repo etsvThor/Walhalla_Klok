@@ -292,13 +292,10 @@ time_t getNtpTime() {
       unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
       // combine the four bytes (two words) into a long integer
       // this is NTP time (seconds since Jan 1 1900):
-      unsigned long secsSince1900 = highWord << 16 | lowWord;
-      Serial.print("Seconds since Jan 1 1900 = " );
-      Serial.println(secsSince1900);
-      unsigned long epoch = secsSince1900 - 2208988800UL;
-      Serial.print("Unix time = ");
-      Serial.println(epoch);
-      return  epoch + timeZoneOffset + processingTime;
+      time_t secsSince1900 = highWord << 16 | lowWord;
+	  // convert to epoch time by adding 70 years
+      time_t secsSince1970 = secsSince1900 - 2208988800UL;
+	  return secsSince1970 + timeZoneOffset + processingTime;
     }
   }
   Serial.println("No NTP Response :-(");
