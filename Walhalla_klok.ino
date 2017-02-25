@@ -38,11 +38,17 @@ void setup()
 {
   pinMode(2, OUTPUT);
   pinMode(3, OUTPUT);
+  pinMode(8, OUTPUT);
   pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+  pinMode(9, OUTPUT);
+  analogWrite(5, 255);
+  analogWrite(6, 255);
+  analogWrite(9, 255);
   digitalWrite(2, LOW);
   digitalWrite(3, LOW);
-  digitalWrite(5, HIGH);
-  pinMode(6, INPUT_PULLUP);
+  digitalWrite(8, HIGH);
+  pinMode(7, INPUT_PULLUP);
   /*Serial.begin(57600); // Only enable when debugging
   while (!Serial) {
     ; // wait for serial port to connect. Needed for Leonardo only
@@ -62,7 +68,7 @@ void setup()
   Udp.begin(localPort);
   Dns.begin(Ethernet.dnsServerIP() );
   Serial.println("Waiting for manual activation");
-  while (digitalRead(6) == 1) {}
+  while (digitalRead(7) == 1) {}
   Serial.println("Waiting for sync");
   setSyncProvider(getNtpTime);
   //setSyncInterval(syncInterval);
