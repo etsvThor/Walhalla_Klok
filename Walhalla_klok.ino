@@ -26,14 +26,14 @@ byte packetBuffer[ NTP_PACKET_SIZE]; 			// buffer to hold incoming and outgoing 
 const char* host = "nsath.forthnet.gr";			// Use random servers through DNS
 const long timeZoneOffset = 3600L;             // Set the timezone to GMT +1
 const long processingTime = 1L;                // Compensate for processing/latency??
-const int syncInterval = 10000 * 60;            // Synchronisation interval in seconds, also always 5 min.
 unsigned int clockTime[2] = {0, 0};
+const long syncInterval = 10000L * 60;            // Synchronisation interval in seconds, also always 5 min.
 
 unsigned int nrSyncs = 0;
-unsigned int cycleStarted = 0;
+bool cycleStarted = false;
 unsigned int waitStarted = 0;
 unsigned long oldTime = 0;
-unsigned int evenOdd = 0;
+bool evenOdd = false;
 unsigned int written = 0;
 
 // A UDP instance to let us send and receive packets over UDP
@@ -98,11 +98,11 @@ void loop()
 
 void clockTrigger() {
   if (clockTime[0] != hour12() || clockTime[1] < minute()) { // || (clockTime[1] - 15) > minute()) {
-    if (cycleStarted == 0) {
+    if (!cycleStarted) {
       oldTime = millis();
-      cycleStarted = 1;
+      cycleStarted = true;
     }
-    if (cycleStarted == 1) {
+    if (cycleStarted) {
       if (millis() - oldTime <= 250) {
         if (evenOdd == 0 && written == 0) {
           digitalWrite(TRIGGER1, HIGH);
@@ -121,14 +121,11 @@ void clockTrigger() {
         written = 2;
       }
       else {
-        if (evenOdd == 0)
-          evenOdd = 1;
-        else if (evenOdd == 1)
-          evenOdd = 0;
+        evenOdd = !evenOdd;
         clockTime[1]++;
         timeCheck();
         analogClockDisplay();
-        cycleStarted = 0;
+        cycleStarted = false;
         oldTime = 0;
         written = 0;
       }
