@@ -129,43 +129,13 @@ void clockTrigger() {
         oldTime = 0;
         written = 0;
       }
+	  if (clockTime[0] == 4 && clockTime[1] == 0)       setRGB(255, 0, 0);
+      else if (clockTime[0] == 4 && clockTime[1] == 15) setRGB(255, 55, 0);
+      else if (clockTime[0] == 4 && clockTime[1] == 30) setRGB(0, 255, 0);
+      else if (clockTime[0] == 6 && clockTime[1] == 30) setRGB(255, 55, 0);
+      else if (clockTime[0] == 6 && clockTime[1] == 40) setRGB(255, 0, 0);
+      else if (clockTime[0] == 7 && clockTime[1] == 0)  setRGB(0, 0, 0);
     }
-  }
-  if (clockTime[0] == 4 && clockTime[1] < 15)
-  {
-    analogWrite(PWM_R, 0);
-    analogWrite(PWM_G, 255);
-    analogWrite(PWM_B, 255);
-  }
-  else if (clockTime[0] == 4 && clockTime[1] < 30)
-  {
-    analogWrite(PWM_R, 0);
-    analogWrite(PWM_G, 200);
-    analogWrite(PWM_B, 255);
-  }
-  else if (clockTime[0] == 4 || clockTime[0] == 5 || (clockTime[0] == 6 && clockTime[1] < 30))
-  {
-    analogWrite(PWM_R, 255);
-    analogWrite(PWM_G, 0);
-    analogWrite(PWM_B, 255);
-  }
-  else if (clockTime[0] == 6 && clockTime[1] < 40)
-  {
-    analogWrite(PWM_R, 0);
-    analogWrite(PWM_G, 200);
-    analogWrite(PWM_B, 255);
-  }
-    else if (clockTime[0] == 6)
-  {
-    analogWrite(PWM_R, 0);
-    analogWrite(PWM_G, 255);
-    analogWrite(PWM_B, 255);
-  }
-  else
-  {
-    analogWrite(PWM_R, 255);
-    analogWrite(PWM_G, 255);
-    analogWrite(PWM_B, 255);
   }
 
 
@@ -286,3 +256,9 @@ unsigned long sendNTPpacket(IPAddress& address)
   Udp.endPacket();
 }
 
+void setRGB(uint8_t R, uint8_t G, uint8_t B)
+{
+  analogWrite(PWM_R, 255 - R);
+  analogWrite(PWM_G, 255 - G);
+  analogWrite(PWM_B, 255 - B);
+}
