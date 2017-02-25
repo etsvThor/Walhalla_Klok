@@ -97,7 +97,7 @@ void loop()
 }
 
 void clockTrigger() {
-  if (clockTime[0] != hour12() || clockTime[1] < minute()) { // || (clockTime[1] - 15) > minute()) {
+  if (clockTime[0] != hourFormat12() || clockTime[1] < minute()) {
     if (!cycleStarted) {
       oldTime = millis();
       cycleStarted = true;
@@ -150,12 +150,6 @@ void timeCheck() {
     clockTime[0] = 0;
 }
 
-unsigned int hour12() {
-  unsigned int num = hourFormat12();
-  if (num >= 12)
-    num = 0;
-  return num;
-}
 
 void digitalClockDisplay() {
   // digital clock display of the time
