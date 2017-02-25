@@ -2,16 +2,23 @@
 #include <Ethernet.h>
 #include <EthernetUdp.h>
 #include "Dns.h"
-#include <Time.h>
+#include <TimeLib.h>
 
 #define SERIAL_ENABLE false
+#define PWM_R 5
+#define PWM_G 9
+#define PWM_B 6
+#define BUTTON 7
+#define REF_HIGH 8
+#define TRIGGER1 2
+#define TRIGGER2 3
 
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
 /*
 Dns naam thorclock.ele.tue.nl. met ip adres 131.155.34.128 en ethernet adres 90:a2:da:0d:0d:1c is nu geregistreerd in de DHCP en DNS server met commentaar "Clock Thor - FLX 6.152 Walhalla".
 */
-byte mac[] = {  0x90, 0xA2, 0xDA, 0x0D, 0x0D, 0x1C};
+byte mac[] = {0x90, 0xA2, 0xDA, 0x0D, 0x0D, 0x1C};
 unsigned int localPort = 80;				// local port to listen for UDP packets
 IPAddress timeServer(193, 92, 150, 3); 		// time.nist.gov NTP server (fallback)
 const int NTP_PACKET_SIZE = 48; 				// NTP time stamp is in the first 48 bytes of the message
@@ -36,23 +43,25 @@ IPAddress rem_add;
 
 void setup()
 {
-  pinMode(2, OUTPUT);
-  pinMode(3, OUTPUT);
-  pinMode(8, OUTPUT);
-  pinMode(5, OUTPUT);
-  pinMode(6, OUTPUT);
-  pinMode(9, OUTPUT);
-  analogWrite(5, 255);
-  analogWrite(6, 255);
-  analogWrite(9, 255);
-  digitalWrite(2, LOW);
-  digitalWrite(3, LOW);
-  digitalWrite(8, HIGH);
-  pinMode(7, INPUT_PULLUP);
-  /*Serial.begin(57600); // Only enable when debugging
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for Leonardo only
-  }*/
+  pinMode(TRIGGER1, OUTPUT);
+  pinMode(TRIGGER2, OUTPUT);
+  pinMode(REF_HIGH, OUTPUT);
+  pinMode(PWM_R, OUTPUT);
+  pinMode(PWM_G, OUTPUT);
+  pinMode(PWM_B, OUTPUT);
+  analogWrite(PWM_R, 255);
+  analogWrite(PWM_G, 255);
+  analogWrite(PWM_B, 255);
+  digitalWrite(TRIGGER1, LOW);
+  digitalWrite(TRIGGER2, LOW);
+  digitalWrite(REF_HIGH, HIGH);
+  pinMode(BUTTON, INPUT_PULLUP);
+  if (SERIAL_ENABLE) {
+    Serial.begin(57600); // Only enable when debugging
+    while (!Serial) {
+      ; // wait for serial port to connect. Needed for Leonardo only
+    }
+  }
   Serial.println("Serial initialized");
   delay(250);
   Serial.println("Initializing Ethernet");
@@ -68,7 +77,7 @@ void setup()
   Udp.begin(localPort);
   Dns.begin(Ethernet.dnsServerIP() );
   Serial.println("Waiting for manual activation");
-  while (digitalRead(7) == 1) {}
+  while (digitalRead(BUTTON) == 1) {}
   Serial.println("Waiting for sync");
   setSyncProvider(getNtpTime);
   //setSyncInterval(syncInterval);
@@ -96,19 +105,19 @@ void clockTrigger() {
     if (cycleStarted == 1) {
       if (millis() - oldTime <= 250) {
         if (evenOdd == 0 && written == 0) {
-          digitalWrite(2, HIGH);
-          digitalWrite(3, LOW);
+          digitalWrite(TRIGGER1, HIGH);
+          digitalWrite(TRIGGER2, LOW);
           written = 1;
         }
         else if (evenOdd == 1 && written == 0) {
-          digitalWrite(3, HIGH);
-          digitalWrite(2, LOW);
+          digitalWrite(TRIGGER1, LOW);
+          digitalWrite(TRIGGER2, HIGH);
           written = 1;
         }
       }
       else if (millis() - oldTime >= 500 && written == 1) {
-        digitalWrite(2, LOW);
-        digitalWrite(3, LOW);
+        digitalWrite(TRIGGER1, LOW);
+        digitalWrite(TRIGGER2, LOW);
         written = 2;
       }
       else {
