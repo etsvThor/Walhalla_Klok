@@ -40,6 +40,7 @@ unsigned int written = 0;
 EthernetUDP Udp;
 DNSClient Dns;
 IPAddress rem_add;
+EthernetServer server(80);
 
 void setup()
 {
@@ -94,6 +95,7 @@ void loop()
     }
   }
   clockTrigger();
+  webServer();
 }
 
 void clockTrigger() {
@@ -137,8 +139,86 @@ void clockTrigger() {
       else if (clockTime[0] == 7 && clockTime[1] == 0)  setRGB(0, 0, 0);
     }
   }
+}
 
+void webServer() {
+  EthernetClient client = server.available();
+  if (client) {
+    boolean currentLineIsBlank = true;
+    while (client.connected()) {
+      int i = 0;
+      int head = 1;
+      int body = 0;
+      if (client.available()) {
+        char c = client.read();
+        Serial.write(c);
 
+        // if you've gotten to the end of the line (received a newline
+        // character) and the line is blank, the http request has ended,
+        // so you can send a reply
+        if (c == '\n' && currentLineIsBlank) {
+
+          // Here is where the POST data is, example: R=1&G=2&B=3
+          Serial.println("[Begin POST data]");
+          char post[64] = {};
+          while (client.available())
+          {
+            post[i] = client.read();
+            Serial.write(post[i]);
+            i++;
+          }
+          Serial.println();
+          Serial.println("[End POST data]");
+          Serial.println();
+
+          int R, G, B;
+          int res = sscanf(post, "R=%d&G=%d&B=%d", &R, &G, &B);
+
+          if (res == 3)
+          {
+            setRGB(R, G, B);
+            Serial.print("R=");
+            Serial.println(R);
+            Serial.print("G=");
+            Serial.println(G);
+            Serial.print("B=");
+            Serial.println(B);
+          }
+          else
+          {
+            Serial.print("res=");
+            Serial.println(res);
+          }
+
+          // send a standard http response header
+          client.println("HTTP/1.1 200 OK");
+          client.println("Content-Type: text/html");
+          client.println("Connection: close");  // the connection will be closed after completion of the response
+          //client.println("Refresh: 5");  // refresh the page automatically every 5 sec
+          client.println();
+          client.println("<!DOCTYPE HTML>");
+          client.println("<title>Clock RGB control</title>");
+          client.println("<h1>Clock RGB control</h1>");
+          client.println("<form method='post' name='RGB'>");
+          client.println("R <input type='number' name='R' min='0' max='255' value='0'><br>");
+          client.println("G <input type='number' name='G' min='0' max='255' value='0'><br>");
+          client.println("B <input type='number' name='B' min='0' max='255' value='0'><br>");
+          client.println("<input type='submit'>");
+          client.println("</form>");
+          client.stop();
+        }
+        else if (c == '\n') {
+          // you're starting a new line
+          currentLineIsBlank = true;
+        }
+        else if (c != '\r') {
+          // you've gotten a character on the current line
+          currentLineIsBlank = false;
+        }
+      }
+    }
+    Serial.println("Disconnected");
+  }
 }
 
 void timeCheck() {
