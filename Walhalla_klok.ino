@@ -68,18 +68,18 @@ void setup()
   Serial.println("Initializing Ethernet");
   // start Ethernet and UDP
   if (Ethernet.begin(mac) == 0) {
-    Serial.println("Failed to configure Ethernet using DHCP, please restart process");
+    Serial.println(F("Failed to configure Ethernet using DHCP, please restart process"));
     // no point in carrying on, so do nothing forevermore:
     while (true);
   }
-  Serial.println("Succeeded to configure Ethernet using DHCP");
-  Serial.print("IP number assigned by DHCP is: ");
+  Serial.println(F("Succeeded to configure Ethernet using DHCP"));
+  Serial.print(F("IP number assigned by DHCP is: "));
   Serial.println(Ethernet.localIP());
   Udp.begin(localPort);
   Dns.begin(Ethernet.dnsServerIP() );
-  Serial.println("Waiting for manual activation");
+  Serial.println(F("Waiting for manual activation"));
   while (digitalRead(BUTTON) == 1) {}
-  Serial.println("Waiting for sync");
+  Serial.println(F("Waiting for sync"));
   setSyncProvider(getNtpTime);
   //setSyncInterval(syncInterval);
 }
@@ -159,8 +159,8 @@ void webServer() {
         if (c == '\n' && currentLineIsBlank) {
 
           // Here is where the POST data is, example: R=1&G=2&B=3
-          Serial.println("[Begin POST data]");
-          char post[64] = {};
+          Serial.println(F("[Begin POST data]"));
+          char post[16] = {};
           while (client.available())
           {
             post[i] = client.read();
@@ -168,7 +168,7 @@ void webServer() {
             i++;
           }
           Serial.println();
-          Serial.println("[End POST data]");
+          Serial.println(F("[End POST data]"));
           Serial.println();
 
           int R, G, B;
@@ -177,16 +177,16 @@ void webServer() {
           if (res == 3)
           {
             setRGB(R, G, B);
-            Serial.print("R=");
+            Serial.print(F("R="));
             Serial.println(R);
-            Serial.print("G=");
+            Serial.print(F("G="));
             Serial.println(G);
-            Serial.print("B=");
+            Serial.print(F("B="));
             Serial.println(B);
           }
           else
           {
-            Serial.print("res=");
+            Serial.print(F("res="));
             Serial.println(res);
           }
 
@@ -217,7 +217,7 @@ void webServer() {
         }
       }
     }
-    Serial.println("Disconnected");
+    Serial.println(F("Disconnected"));
   }
 }
 
@@ -233,24 +233,24 @@ void timeCheck() {
 
 void digitalClockDisplay() {
   // digital clock display of the time
-  Serial.print("Digital clock time: ");
+  Serial.print(F("Digital clock time: "));
   Serial.print(hourFormat12());
   printDigits(minute());
   printDigits(second());
-  Serial.print(" ");
+  Serial.print(F(" "));
   Serial.print(day());
-  Serial.print(" ");
+  Serial.print(F(" "));
   Serial.print(month());
-  Serial.print(" ");
+  Serial.print(F(" "));
   Serial.print(year());
-  Serial.print(", Nr of syncs: ");
+  Serial.print(F(", Nr of syncs: "));
   Serial.print(nrSyncs);
   Serial.println();
 }
 
 void analogClockDisplay() {
   // analog clock display of the time
-  Serial.print("Analog clock time: ");
+  Serial.print(F("Analog clock time: "));
   Serial.print(clockTime[0]);
   printDigits(clockTime[1]);
   Serial.println();
@@ -258,7 +258,7 @@ void analogClockDisplay() {
 
 void printDigits(int digits) {
   // utility for digital clock display: prints preceding colon and leading 0
-  Serial.print(":");
+  Serial.print(F(":"));
   if (digits < 10)
     Serial.print('0');
   Serial.print(digits);
@@ -267,16 +267,16 @@ void printDigits(int digits) {
 time_t getNtpTime() {
   nrSyncs++;
   while (Udp.parsePacket() > 0) ; // discard any previously received packets
-  Serial.println("Transmit NTP Request");
+  Serial.println(F("Transmit NTP Request"));
   if (Dns.getHostByName(host, rem_add) == 1 ) {
-    Serial.println("DNS resolve...");
+    Serial.println(F("DNS resolve..."));
     Serial.print(host);
-    Serial.print("  = ");
+    Serial.print(F("  = "));
     Serial.println(rem_add);
     sendNTPpacket(rem_add);
   } else {
-    Serial.println("DNS fail..., falling back to static IP");
-    Serial.print("time.nist.gov = ");
+    Serial.println(F("DNS fail..., falling back to static IP"));
+    Serial.print(F("time.nist.gov = "));
     Serial.println(timeServer);	// fallback
     sendNTPpacket(timeServer); 	// send an NTP packet to a time server
   }
@@ -285,7 +285,7 @@ time_t getNtpTime() {
   while (millis() - beginWait < 1500) {
     int size = Udp.parsePacket();
     if (size >= NTP_PACKET_SIZE) {
-      Serial.println("Receive NTP Response");
+      Serial.println(F("Receive NTP Response"));
       Udp.read(packetBuffer, NTP_PACKET_SIZE);  // read packet into the buffer
       // convert four bytes starting at location 40 to a long integer
       unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
@@ -298,7 +298,7 @@ time_t getNtpTime() {
 	  return secsSince1970 + timeZoneOffset + processingTime;
     }
   }
-  Serial.println("No NTP Response :-(");
+  Serial.println(F("No NTP Response :-("));
   return 0; // return 0 if unable to get the time
 }
 
