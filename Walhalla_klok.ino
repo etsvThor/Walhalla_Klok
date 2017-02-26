@@ -4,7 +4,6 @@
 #include "Dns.h"
 #include <TimeLib.h>
 
-#define SERIAL_ENABLE false
 #define PWM_R 5
 #define PWM_G 9
 #define PWM_B 6
@@ -57,11 +56,10 @@ void setup()
   digitalWrite(TRIGGER2, LOW);
   digitalWrite(REF_HIGH, HIGH);
   pinMode(BUTTON, INPUT_PULLUP);
-  if (SERIAL_ENABLE) {
-    Serial.begin(57600); // Only enable when debugging
-    while (!Serial) {
-      ; // wait for serial port to connect. Needed for Leonardo only
-    }
+
+  Serial.begin(57600); // Only enable when debugging
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for Leonardo only
   }
   Serial.println("Serial initialized");
   delay(250);
