@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include <SD.h>
 #include <Ethernet.h>
 #include <EthernetUdp.h>
 #include "Dns.h"
@@ -11,6 +12,7 @@
 #define REF_HIGH 8
 #define TRIGGER1 2
 #define TRIGGER2 3
+#define SD_CS 4
 
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
@@ -21,7 +23,7 @@ byte mac[] = {0x90, 0xA2, 0xDA, 0x0D, 0x0D, 0x1C};
 unsigned int localPort = 80;				// local port to listen for UDP packets
 IPAddress timeServer(193, 92, 150, 3); 		// time.nist.gov NTP server (fallback)
 const int NTP_PACKET_SIZE = 48; 				// NTP time stamp is in the first 48 bytes of the message
-byte packetBuffer[ NTP_PACKET_SIZE]; 			// buffer to hold incoming and outgoing packets
+byte packetBuffer[NTP_PACKET_SIZE]; 			// buffer to hold incoming and outgoing packets
 const char* host = "nsath.forthnet.gr";			// Use random servers through DNS
 const long timeZoneOffset = 3600L;             // Set the timezone to GMT +1
 const long processingTime = 1L;                // Compensate for processing/latency??
@@ -40,6 +42,7 @@ EthernetUDP Udp;
 DNSClient Dns;
 IPAddress rem_add;
 EthernetServer server(80);
+File webFile;
 
 void setup()
 {
@@ -61,15 +64,32 @@ void setup()
   while (!Serial) {
     ; // wait for serial port to connect. Needed for Leonardo only
   }
-  Serial.println("Serial initialized");
-  delay(250);
-  Serial.println("Initializing Ethernet");
+
+  Serial.println(F("Initializing SD card"));
+
+  if (!SD.begin(SD_CS)) {
+    Serial.println(F("SD initialization failed!"));
+    // no point in carrying on, so do nothing forevermore:
+    while (true);
+  }
+  Serial.println(F("SD initialization done."));
+
+  // check for index.htm file
+  if (!SD.exists("index.htm")) {
+    Serial.println(F("ERROR - Can't find index.htm file!"));
+    while (true);
+  }
+  Serial.println(F("SUCCESS - Found index.htm file."));
+
+
+  Serial.println(F("Initializing Ethernet"));
   // start Ethernet and UDP
   if (Ethernet.begin(mac) == 0) {
     Serial.println(F("Failed to configure Ethernet using DHCP, please restart process"));
     // no point in carrying on, so do nothing forevermore:
     while (true);
   }
+  server.begin();
   Serial.println(F("Succeeded to configure Ethernet using DHCP"));
   Serial.print(F("IP number assigned by DHCP is: "));
   Serial.println(Ethernet.localIP());
@@ -194,15 +214,14 @@ void webServer() {
           client.println("Connection: close");  // the connection will be closed after completion of the response
           //client.println("Refresh: 5");  // refresh the page automatically every 5 sec
           client.println();
-          client.println("<!DOCTYPE HTML>");
-          client.println("<title>Clock RGB control</title>");
-          client.println("<h1>Clock RGB control</h1>");
-          client.println("<form method='post' name='RGB'>");
-          client.println("R <input type='number' name='R' min='0' max='255' value='0'><br>");
-          client.println("G <input type='number' name='G' min='0' max='255' value='0'><br>");
-          client.println("B <input type='number' name='B' min='0' max='255' value='0'><br>");
-          client.println("<input type='submit'>");
-          client.println("</form>");
+          // send web page
+          webFile = SD.open("index.htm");        // open web page file
+          if (webFile) {
+            while (webFile.available()) {
+              client.write(webFile.read()); // send web page to client
+            }
+            webFile.close();
+          }
           client.stop();
         }
         else if (c == '\n') {
