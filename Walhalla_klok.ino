@@ -77,8 +77,7 @@ void setup()
 
 
   Serial.println(F("Initializing Ethernet"));
-  // start Ethernet and UDP
-  if (Ethernet.begin(mac) == 0) {
+  if (Ethernet.begin(mac) == 0) {  // start Ethernet and UDP
     Serial.println(F("Failed to configure Ethernet using DHCP, please restart process"));
     // no point in carrying on, so do nothing forevermore:
     while (true);
@@ -153,15 +152,14 @@ void clockTrigger() {
 }
 
 void webServer() {
-  EthernetClient client = server.available();
-  if (client) {
+  EthernetClient client = server.available(); // try to get client
+
+  if (client) { // got client?
+    // an http request ends with a blank line
     boolean currentLineIsBlank = true;
     while (client.connected()) {
-      int i = 0;
-      int head = 1;
-      int body = 0;
-      if (client.available()) {
-        char c = client.read();
+      if (client.available()) { // client data available to read
+        char c = client.read(); // read 1 byte (character) from client
         Serial.write(c);
 
         // if you've gotten to the end of the line (received a newline
@@ -172,6 +170,7 @@ void webServer() {
           // Here is where the POST data is, example: R=1&G=2&B=3
           Serial.println(F("[Begin POST data]"));
           char post[16] = {};
+          int i = 0;
           while (client.available())
           {
             post[i] = client.read();
