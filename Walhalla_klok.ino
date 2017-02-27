@@ -1,8 +1,5 @@
-#include <SPI.h>
 #include <SD.h>
 #include <Ethernet.h>
-#include <EthernetUdp.h>
-#include "Dns.h"
 #include <TimeLib.h>
 
 #define PWM_R 5
@@ -24,9 +21,7 @@ unsigned int localPort = 80;				// local port to listen for UDP packets
 IPAddress timeServer(193, 92, 150, 3); 		// time.nist.gov NTP server (fallback)
 const int NTP_PACKET_SIZE = 48; 				// NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[NTP_PACKET_SIZE]; 			// buffer to hold incoming and outgoing packets
-const char* host = "nsath.forthnet.gr";			// Use random servers through DNS
 const long timeZoneOffset = 3600L;             // Set the timezone to GMT +1
-const long processingTime = 1L;                // Compensate for processing/latency??
 unsigned int clockTime[2] = {0, 0};
 const long syncInterval = 10000L * 60;            // Synchronisation interval in seconds, also always 5 min.
 
@@ -39,8 +34,6 @@ unsigned int written = 0;
 
 // A UDP instance to let us send and receive packets over UDP
 EthernetUDP Udp;
-DNSClient Dns;
-IPAddress rem_add;
 EthernetServer server(80);
 File webFile;
 
@@ -94,7 +87,6 @@ void setup()
   Serial.print(F("IP number assigned by DHCP is: "));
   Serial.println(Ethernet.localIP());
   Udp.begin(localPort);
-  Dns.begin(Ethernet.dnsServerIP() );
   Serial.println(F("Waiting for manual activation"));
   while (digitalRead(BUTTON) == 1) {}
   Serial.println(F("Waiting for sync"));
@@ -285,18 +277,10 @@ time_t getNtpTime() {
   nrSyncs++;
   while (Udp.parsePacket() > 0) ; // discard any previously received packets
   Serial.println(F("Transmit NTP Request"));
-  if (Dns.getHostByName(host, rem_add) == 1 ) {
-    Serial.println(F("DNS resolve..."));
-    Serial.print(host);
-    Serial.print(F("  = "));
-    Serial.println(rem_add);
-    sendNTPpacket(rem_add);
-  } else {
-    Serial.println(F("DNS fail..., falling back to static IP"));
-    Serial.print(F("time.nist.gov = "));
-    Serial.println(timeServer);	// fallback
-    sendNTPpacket(timeServer); 	// send an NTP packet to a time server
-  }
+
+  Serial.print(F("time.nist.gov = "));
+  Serial.println(timeServer);
+  sendNTPpacket(timeServer); 	// send an NTP packet to a time server
 
   uint32_t beginWait = millis();
   while (millis() - beginWait < 1500) {
@@ -312,7 +296,7 @@ time_t getNtpTime() {
       time_t secsSince1900 = highWord << 16 | lowWord;
 	  // convert to epoch time by adding 70 years
       time_t secsSince1970 = secsSince1900 - 2208988800UL;
-	  return secsSince1970 + timeZoneOffset + processingTime;
+      return secsSince1970 + timeZoneOffset;
     }
   }
   Serial.println(F("No NTP Response :-("));
