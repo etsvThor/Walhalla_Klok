@@ -22,7 +22,7 @@ IPAddress timeServer(193, 92, 150, 3); 		// time.nist.gov NTP server (fallback)
 const int NTP_PACKET_SIZE = 48; 				// NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[NTP_PACKET_SIZE]; 			// buffer to hold incoming and outgoing packets
 const long timeZoneOffset = 3600L;             // Set the timezone to GMT +1
-unsigned int clockTime[2] = {0, 0};
+unsigned int clockTime[2] = {12, 0};
 const long syncInterval = 10000L * 60;            // Synchronisation interval in seconds, also always 5 min.
 
 unsigned int nrSyncs = 0;
@@ -235,8 +235,8 @@ void timeCheck() {
     clockTime[1] = 0;
     clockTime[0]++;
   }
-  if (clockTime[0] >= 12)
-    clockTime[0] = 0;
+  if (clockTime[0] >= 13)
+    clockTime[0] = 1;
 }
 
 
