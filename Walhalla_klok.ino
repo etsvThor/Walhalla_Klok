@@ -2,35 +2,36 @@
 #include <Ethernet.h>
 #include <TimeLib.h>
 
-#define PWM_R 5
-#define PWM_G 9
-#define PWM_B 6
-#define BUTTON 7
-#define REF_HIGH 8
-#define TRIGGER1 2
-#define TRIGGER2 3
-#define SD_CS 4
+#define PWM_R     5
+#define PWM_G     9
+#define PWM_B     6
+#define BUTTON    7
+#define REF_HIGH  8
+#define TRIGGER1  2
+#define TRIGGER2  3
+#define SD_CS     4
+
+#define NTP_PACKET_SIZE 48        // NTP time stamp is in the first 48 bytes of the message
+#define LOCALPORT       80        // Local port to listen for UDP packets
+#define SYNCINTERVAL    600       // Synchronisation interval in seconds
+#define TIMEZONEOFFSET  3600      // Set the timezone to GMT +1
 
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
 /*
 Dns naam thorclock.ele.tue.nl. met ip adres 131.155.34.128 en ethernet adres 90:a2:da:0d:0d:1c is nu geregistreerd in de DHCP en DNS server met commentaar "Clock Thor - FLX 6.152 Walhalla".
 */
-byte mac[] = {0x90, 0xA2, 0xDA, 0x0D, 0x0D, 0x1C};
-unsigned int localPort = 80;				// local port to listen for UDP packets
-IPAddress timeServer(193, 92, 150, 3); 		// time.nist.gov NTP server (fallback)
-const int NTP_PACKET_SIZE = 48; 				// NTP time stamp is in the first 48 bytes of the message
-byte packetBuffer[NTP_PACKET_SIZE]; 			// buffer to hold incoming and outgoing packets
-const long timeZoneOffset = 3600L;             // Set the timezone to GMT +1
-unsigned int clockTime[2] = {12, 0};
-const long syncInterval = 10000L * 60;            // Synchronisation interval in seconds, also always 5 min.
+byte mac[] = {0x90, 0xA2, 0xDA, 0x0D, 0x0D, 0x1C};			
+IPAddress timeServer(193, 92, 150, 3); 		// time.nist.gov NTP server
+byte packetBuffer[NTP_PACKET_SIZE]; 			// buffer to hold incoming and outgoing packets         
+uint8_t clockTime[2] = {12, 0};
 
 unsigned int nrSyncs = 0;
 bool cycleStarted = false;
 unsigned int waitStarted = 0;
 unsigned long oldTime = 0;
 bool evenOdd = false;
-unsigned int written = 0;
+uint8_t written = 0;
 
 // A UDP instance to let us send and receive packets over UDP
 EthernetUDP Udp;
@@ -86,12 +87,12 @@ void setup()
   Serial.println(F("Succeeded to configure Ethernet using DHCP"));
   Serial.print(F("IP number assigned by DHCP is: "));
   Serial.println(Ethernet.localIP());
-  Udp.begin(localPort);
   Serial.println(F("Waiting for manual activation"));
   while (digitalRead(BUTTON) == 1) {}
+  Udp.begin(LOCALPORT);
   Serial.println(F("Waiting for sync"));
   setSyncProvider(getNtpTime);
-  //setSyncInterval(syncInterval);
+  setSyncInterval(SYNCINTERVAL);
 }
 
 time_t prevDisplay = 0; // when the digital clock was displayed
@@ -296,7 +297,7 @@ time_t getNtpTime() {
       time_t secsSince1900 = highWord << 16 | lowWord;
 	  // convert to epoch time by adding 70 years
       time_t secsSince1970 = secsSince1900 - 2208988800UL;
-      return secsSince1970 + timeZoneOffset;
+      return secsSince1970 + TIMEZONEOFFSET;
     }
   }
   Serial.println(F("No NTP Response :-("));
