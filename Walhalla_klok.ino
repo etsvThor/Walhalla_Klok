@@ -17,6 +17,9 @@
 #define TIMEZONEOFFSET    3600      // Set the timezone to GMT +1
 #define CONNECTIONTIMOUT  10000     // Time after a connection is automatically closed
 
+#define BOOTSITE  1
+#define RGBSITE   2
+
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
 /*
@@ -33,6 +36,7 @@ unsigned int waitStarted = 0;
 unsigned long oldTime = 0;
 bool evenOdd = false;
 uint8_t written = 0;
+bool initializingDone;
 
 // A UDP instance to let us send and receive packets over UDP
 EthernetUDP Udp;
@@ -88,7 +92,13 @@ void setup()
   Serial.print(F("IP number assigned by DHCP is: "));
   Serial.println(Ethernet.localIP());
   Serial.println(F("Waiting for manual activation"));
-  while (digitalRead(BUTTON) == 1) {}
+  while (!initializingDone) {
+    webServer(BOOTSITE); // Check if time is given via interface
+    if (digitalRead(BUTTON) == 0)
+    {
+      initializingDone = true; // Clock is set at 12 o'clock
+    }
+  }
   Udp.begin(LOCALPORT);
   Serial.println(F("Waiting for sync"));
   setSyncProvider(getNtpTime);
@@ -106,7 +116,7 @@ void loop()
     }
   }
   clockTrigger();
-  webServer();
+  webServer(RGBSITE);
 }
 
 void clockTrigger() {
@@ -152,7 +162,7 @@ void clockTrigger() {
   }
 }
 
-void webServer() {
+void webServer(uint8_t siteNumber) {
   EthernetClient client = server.available(); // try to get client
 
   if (client) { // got client?
@@ -171,36 +181,35 @@ void webServer() {
         if (c == '\n' && currentLineIsBlank) {
 
           // Here is where the POST data is, example: R=1&G=2&B=3
-          Serial.println(F("[Begin POST data]"));
-          char post[16] = {};
-          int i = 0;
-          while (client.available())
+          char post[20] = {};
+          for (int i = 0; client.available() && i < 20; i++)
           {
             post[i] = client.read();
             Serial.write(post[i]);
-            i++;
           }
-          Serial.println();
-          Serial.println(F("[End POST data]"));
-          Serial.println();
 
-          int R, G, B;
-          int res = sscanf(post, "R=%d&G=%d&B=%d", &R, &G, &B);
+          int res;
+          switch (siteNumber)
+          {
+            case BOOTSITE:
+              int H, M;
+              res = sscanf(post, "H=%d&M=%d", &H, &M);
+              if (res == 2)
+              {
+                clockTime[0] = H;
+                clockTime[1] = M;
+                initializingDone = true;
+              }
+              break;
+            case RGBSITE:
+              int R, G, B;
+              res = sscanf(post, "R=%d&G=%d&B=%d", &R, &G, &B);
 
-          if (res == 3)
-          {
-            setRGB(R, G, B);
-            Serial.print(F("R="));
-            Serial.println(R);
-            Serial.print(F("G="));
-            Serial.println(G);
-            Serial.print(F("B="));
-            Serial.println(B);
-          }
-          else
-          {
-            Serial.print(F("res="));
-            Serial.println(res);
+              if (res == 3)
+              {
+                setRGB(R, G, B);
+              }
+              break;
           }
 
           // send a standard http response header
@@ -210,7 +219,15 @@ void webServer() {
           //client.println("Refresh: 5");  // refresh the page automatically every 5 sec
           client.println();
           // send web page
-          webFile = SD.open("index.htm");        // open web page file
+          switch (siteNumber)
+          {
+            case BOOTSITE:
+              webFile = SD.open("boot.htm");        // open web page file
+              break;
+            case RGBSITE:
+              webFile = SD.open("index.htm");        // open web page file
+              break;
+          }
           if (webFile) {
             while (webFile.available()) {
               client.write(webFile.read()); // send web page to client
@@ -234,7 +251,6 @@ void webServer() {
         client.stop();
       }
     }
-    Serial.println(F("Disconnected"));
   }
 }
 
