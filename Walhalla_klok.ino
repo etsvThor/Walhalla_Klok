@@ -127,7 +127,10 @@ void loop()
 }
 
 void clockTrigger() {
-  if (clockTime[0] != hourFormat12() || clockTime[1] < minute()) {
+  if(clockTime[0] == hourFormat12() && clockTime[1] == minute()) {
+    timeInitialized == true;
+  }
+  else {
     if (!cycleStarted) {
       oldTime = millis();
       cycleStarted = true;
@@ -137,6 +140,8 @@ void clockTrigger() {
         if (evenOdd == 0 && written == 0) {
           digitalWrite(TRIGGER1, HIGH);
           digitalWrite(TRIGGER2, LOW);
+          if (!timeInitialized)
+            setRGB(255, 40, 0);
           written = 1;
         }
         else if (evenOdd == 1 && written == 0) {
@@ -148,6 +153,8 @@ void clockTrigger() {
       else if (millis() - oldTime >= 500 && written == 1) {
         digitalWrite(TRIGGER1, LOW);
         digitalWrite(TRIGGER2, LOW);
+        if (!timeInitialized)
+          setRGB(0, 255, 0);
         written = 2;
       }
       else {
