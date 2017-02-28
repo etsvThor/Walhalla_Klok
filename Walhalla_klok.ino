@@ -36,7 +36,8 @@ unsigned int waitStarted = 0;
 unsigned long oldTime = 0;
 bool evenOdd = false;
 uint8_t written = 0;
-bool initializingDone;
+bool initializingDone = false;
+bool timeInitialized = false;
 
 // A UDP instance to let us send and receive packets over UDP
 EthernetUDP Udp;
@@ -51,9 +52,7 @@ void setup()
   pinMode(PWM_R, OUTPUT);
   pinMode(PWM_G, OUTPUT);
   pinMode(PWM_B, OUTPUT);
-  analogWrite(PWM_R, 255);
-  analogWrite(PWM_G, 255);
-  analogWrite(PWM_B, 255);
+  setRGB(0, 0, 0);
   digitalWrite(TRIGGER1, LOW);
   digitalWrite(TRIGGER2, LOW);
   digitalWrite(REF_HIGH, HIGH);
@@ -69,6 +68,7 @@ void setup()
   if (!SD.begin(SD_CS)) {
     Serial.println(F("SD initialization failed!"));
     // no point in carrying on, so do nothing forevermore:
+    setRGB(255, 0, 255); // Set purple on SD card error
     while (true);
   }
   Serial.println(F("SD initialization done."));
@@ -76,6 +76,7 @@ void setup()
   // check for index.htm file
   if (!SD.exists("index.htm")) {
     Serial.println(F("ERROR - Can't find index.htm file!"));
+    setRGB(255, 0, 255); // Set purple on SD card error
     while (true);
   }
   Serial.println(F("SUCCESS - Found index.htm file."));
@@ -85,6 +86,7 @@ void setup()
   if (Ethernet.begin(mac) == 0) {  // start Ethernet and UDP
     Serial.println(F("Failed to configure Ethernet using DHCP, please restart process"));
     // no point in carrying on, so do nothing forevermore:
+    setRGB(0, 255, 255); // Set yellow on ethernet error
     while (true);
   }
   server.begin();
@@ -93,6 +95,7 @@ void setup()
   Serial.println(Ethernet.localIP());
   Serial.println(F("Waiting for activation"));
   while (!initializingDone) {
+    setRGB(0, 0, 255); // Set blue when ready to initialize
     webServer(BOOTSITE); // Check if time is given via interface
     if (digitalRead(BUTTON) == 0)
     {
@@ -114,6 +117,10 @@ void loop()
       prevDisplay = now();
       digitalClockDisplay();
     }
+  }
+  else
+  {
+    setRGB(255, 0, 0); // Set red on time error
   }
   clockTrigger();
   webServer(RGBSITE);
