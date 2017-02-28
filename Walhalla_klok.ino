@@ -91,7 +91,7 @@ void setup()
   Serial.println(F("Succeeded to configure Ethernet using DHCP"));
   Serial.print(F("IP number assigned by DHCP is: "));
   Serial.println(Ethernet.localIP());
-  Serial.println(F("Waiting for manual activation"));
+  Serial.println(F("Waiting for activation"));
   while (!initializingDone) {
     webServer(BOOTSITE); // Check if time is given via interface
     if (digitalRead(BUTTON) == 0)
@@ -187,6 +187,7 @@ void webServer(uint8_t siteNumber) {
             post[i] = client.read();
             Serial.write(post[i]);
           }
+          Serial.println();
 
           int res;
           switch (siteNumber)
