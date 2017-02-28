@@ -32,10 +32,8 @@ uint8_t clockTime[2] = {12, 0};
 
 unsigned int nrSyncs = 0;
 bool cycleStarted = false;
-unsigned int waitStarted = 0;
 unsigned long oldTime = 0;
 bool evenOdd = false;
-uint8_t written = 0;
 bool initializingDone = false;
 bool timeInitialized = false;
 
@@ -52,7 +50,7 @@ void setup()
   pinMode(PWM_R, OUTPUT);
   pinMode(PWM_G, OUTPUT);
   pinMode(PWM_B, OUTPUT);
-  setRGB(0, 0, 0);
+  setRGB(255, 255, 255); // Set white on boot
   digitalWrite(TRIGGER1, LOW);
   digitalWrite(TRIGGER2, LOW);
   digitalWrite(REF_HIGH, HIGH);
@@ -127,8 +125,8 @@ void loop()
 }
 
 void clockTrigger() {
-  if(clockTime[0] == hourFormat12() && clockTime[1] == minute()) {
-    timeInitialized == true;
+  if (clockTime[0] == hourFormat12() && clockTime[1] == minute()) {
+    timeInitialized = true;
   }
   else {
     if (!cycleStarted) {
@@ -136,35 +134,28 @@ void clockTrigger() {
       cycleStarted = true;
     }
     if (cycleStarted) {
-      if (millis() - oldTime <= 250) {
-        if (evenOdd == 0 && written == 0) {
+      if (millis() - oldTime <= 125) {
+        if (evenOdd == 0 ) {
           digitalWrite(TRIGGER1, HIGH);
           digitalWrite(TRIGGER2, LOW);
           if (!timeInitialized)
             setRGB(255, 40, 0);
-          written = 1;
         }
-        else if (evenOdd == 1 && written == 0) {
+        else if (evenOdd == 1) {
           digitalWrite(TRIGGER1, LOW);
           digitalWrite(TRIGGER2, HIGH);
-          written = 1;
+          if (!timeInitialized)
+            setRGB(0, 255, 0);
         }
       }
-      else if (millis() - oldTime >= 500 && written == 1) {
+      else {
         digitalWrite(TRIGGER1, LOW);
         digitalWrite(TRIGGER2, LOW);
-        if (!timeInitialized)
-          setRGB(0, 255, 0);
-        written = 2;
-      }
-      else {
         evenOdd = !evenOdd;
         clockTime[1]++;
         timeCheck();
         analogClockDisplay();
         cycleStarted = false;
-        oldTime = 0;
-        written = 0;
       }
       if (clockTime[0] == 4 && clockTime[1] == 0)       setRGB(255, 0, 0);
       else if (clockTime[0] == 4 && clockTime[1] == 15) setRGB(255, 55, 0);
