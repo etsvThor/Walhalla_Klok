@@ -19,11 +19,11 @@
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
 /*
-Dns naam thorclock.ele.tue.nl. met ip adres 131.155.34.128 en ethernet adres 90:a2:da:0d:0d:1c is nu geregistreerd in de DHCP en DNS server met commentaar "Clock Thor - FLX 6.152 Walhalla".
+  Dns naam thorclock.ele.tue.nl. met ip adres 131.155.34.128 en ethernet adres 90:a2:da:0d:0d:1c is nu geregistreerd in de DHCP en DNS server met commentaar "Clock Thor - FLX 6.152 Walhalla".
 */
-byte mac[] = {0x90, 0xA2, 0xDA, 0x0D, 0x0D, 0x1C};			
+byte mac[] = {0x90, 0xA2, 0xDA, 0x0D, 0x0D, 0x1C};
 IPAddress timeServer(193, 92, 150, 3); 		// time.nist.gov NTP server
-byte packetBuffer[NTP_PACKET_SIZE]; 			// buffer to hold incoming and outgoing packets         
+byte packetBuffer[NTP_PACKET_SIZE]; 			// buffer to hold incoming and outgoing packets
 uint8_t clockTime[2] = {12, 0};
 
 unsigned int nrSyncs = 0;
@@ -141,7 +141,7 @@ void clockTrigger() {
         oldTime = 0;
         written = 0;
       }
-	  if (clockTime[0] == 4 && clockTime[1] == 0)       setRGB(255, 0, 0);
+      if (clockTime[0] == 4 && clockTime[1] == 0)       setRGB(255, 0, 0);
       else if (clockTime[0] == 4 && clockTime[1] == 15) setRGB(255, 55, 0);
       else if (clockTime[0] == 4 && clockTime[1] == 30) setRGB(0, 255, 0);
       else if (clockTime[0] == 6 && clockTime[1] == 30) setRGB(255, 55, 0);
@@ -300,7 +300,7 @@ time_t getNtpTime() {
       // combine the four bytes (two words) into a long integer
       // this is NTP time (seconds since Jan 1 1900):
       time_t secsSince1900 = highWord << 16 | lowWord;
-	  // convert to epoch time by adding 70 years
+      // convert to epoch time by adding 70 years
       time_t secsSince1970 = secsSince1900 - 2208988800UL;
       return secsSince1970 + TIMEZONEOFFSET;
     }
