@@ -157,7 +157,8 @@ void webServer() {
   if (client) { // got client?
     // an http request ends with a blank line
     boolean currentLineIsBlank = true;
-    while (client.connected()) {
+    boolean canEndConnection = false;
+    while (client.status() != 0) { //client.connected() is not reliable apparently, use client.status() != 0 instead
       if (client.available()) { // client data available to read
         char c = client.read(); // read 1 byte (character) from client
         Serial.write(c);
@@ -214,7 +215,7 @@ void webServer() {
             }
             webFile.close();
           }
-          client.stop();
+          canEndConnection = true;
         }
         else if (c == '\n') {
           // you're starting a new line
@@ -224,6 +225,11 @@ void webServer() {
           // you've gotten a character on the current line
           currentLineIsBlank = false;
         }
+      }
+      if (canEndConnection)
+      {
+        while (client.read() > 0); // client.stop() can misbehave if the rx buffer isn't empty
+        client.stop();
       }
     }
     Serial.println(F("Disconnected"));
