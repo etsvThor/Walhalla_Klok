@@ -11,10 +11,11 @@
 #define TRIGGER2  3
 #define SD_CS     4
 
-#define NTP_PACKET_SIZE 48        // NTP time stamp is in the first 48 bytes of the message
-#define LOCALPORT       80        // Local port to listen for UDP packets
-#define SYNCINTERVAL    600       // Synchronisation interval in seconds
-#define TIMEZONEOFFSET  3600      // Set the timezone to GMT +1
+#define NTP_PACKET_SIZE   48        // NTP time stamp is in the first 48 bytes of the message
+#define LOCALPORT         80        // Local port to listen for UDP packets
+#define SYNCINTERVAL      600       // Synchronisation interval in seconds
+#define TIMEZONEOFFSET    3600      // Set the timezone to GMT +1
+#define CONNECTIONTIMOUT  10000     // Time after a connection is automatically closed
 
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
@@ -155,6 +156,7 @@ void webServer() {
   EthernetClient client = server.available(); // try to get client
 
   if (client) { // got client?
+    time_t timeout = millis() +  CONNECTIONTIMOUT;
     // an http request ends with a blank line
     boolean currentLineIsBlank = true;
     boolean canEndConnection = false;
@@ -226,7 +228,7 @@ void webServer() {
           currentLineIsBlank = false;
         }
       }
-      if (canEndConnection)
+      if (canEndConnection || millis() > timeout)
       {
         while (client.read() > 0); // client.stop() can misbehave if the rx buffer isn't empty
         client.stop();
