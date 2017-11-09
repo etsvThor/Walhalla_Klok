@@ -222,19 +222,23 @@ void webServer(uint8_t siteNumber) {
           }
 
           // send a standard http response header
-          client.println("HTTP/1.1 200 OK");
-          client.println("Content-Type: text/html");
-          client.println("Connection: close");  // the connection will be closed after completion of the response
-          //client.println("Refresh: 5");  // refresh the page automatically every 5 sec
-          client.println();
+          webFile = SD.open(F("http.txt"));
+
+          if (webFile) {
+            while (webFile.available()) {
+              client.write(webFile.read()); // send web page to client
+            }
+            webFile.close();
+          }
+         
           // send web page
           switch (siteNumber)
           {
             case BOOTSITE:
-              webFile = SD.open("boot.htm");        // open web page file
+              webFile = SD.open(F("boot.htm"));        // open web page file
               break;
             case RGBSITE:
-              webFile = SD.open("index.htm");        // open web page file
+              webFile = SD.open(F("index.htm"));        // open web page file
               break;
           }
           if (webFile) {
