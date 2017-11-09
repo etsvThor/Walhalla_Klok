@@ -10,11 +10,12 @@
 #define TRIGGER1  2
 #define TRIGGER2  3
 #define SD_CS     4
+#define ETH_CS    10
 
 #define NTP_PACKET_SIZE   48        // NTP time stamp is in the first 48 bytes of the message
 #define LOCALPORT         80        // Local port to listen for UDP packets
 #define SYNCINTERVAL      600       // Synchronisation interval in seconds
-#define TIMEZONEOFFSET    3600      // Set the timezone to GMT +1
+#define TIMEZONEOFFSET    1         // Set the timezone to GMT +1
 #define CONNECTIONTIMOUT  10000     // Time after a connection is automatically closed
 
 #define BOOTSITE  1
@@ -36,6 +37,7 @@ unsigned long oldTime = 0;
 bool evenOdd = false;
 bool initializingDone = false;
 bool timeInitialized = false;
+bool daylightSavingTime = false;
 
 // A UDP instance to let us send and receive packets over UDP
 EthernetUDP Udp;
@@ -44,6 +46,9 @@ File webFile;
 
 void setup()
 {
+   // deselect Ethernet chip on SPI bus
+  pinMode(ETH_CS, OUTPUT);
+  digitalWrite(ETH_CS, HIGH);
   pinMode(TRIGGER1, OUTPUT);
   pinMode(TRIGGER2, OUTPUT);
   pinMode(REF_HIGH, OUTPUT);
@@ -56,11 +61,7 @@ void setup()
   digitalWrite(REF_HIGH, HIGH);
   pinMode(BUTTON, INPUT_PULLUP);
 
-  Serial.begin(57600); // Only enable when debugging
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for Leonardo only
-  }
-
+  Serial.begin(115200); // Only enable when debugging
   Serial.println(F("Initializing SD card"));
 
   if (!SD.begin(SD_CS)) {
@@ -84,7 +85,7 @@ void setup()
   if (Ethernet.begin(mac) == 0) {  // start Ethernet and UDP
     Serial.println(F("Failed to configure Ethernet using DHCP, please restart process"));
     // no point in carrying on, so do nothing forevermore:
-    setRGB(0, 255, 255); // Set yellow on ethernet error
+    setRGB(255, 255, 0); // Set yellow on ethernet error
     while (true);
   }
   server.begin();
@@ -99,6 +100,7 @@ void setup()
     {
       initializingDone = true; // Clock is set at 12 o'clock
     }
+    setRGB(0, 0, 0); // Reset leds when initializing is done
   }
   Udp.begin(LOCALPORT);
   Serial.println(F("Waiting for sync"));
@@ -185,7 +187,7 @@ void webServer(uint8_t siteNumber) {
         // so you can send a reply
         if (c == '\n' && currentLineIsBlank) {
 
-          // Here is where the POST data is, example: R=1&G=2&B=3
+          // Here is where the POST data is
           char post[20] = {};
           for (int i = 0; client.available() && i < 20; i++)
           {
@@ -198,19 +200,20 @@ void webServer(uint8_t siteNumber) {
           switch (siteNumber)
           {
             case BOOTSITE:
-              int H, M;
-              res = sscanf(post, "H=%d&M=%d", &H, &M);
-              if (res == 2)
+              int H, M, T;
+              res = sscanf(post, "H=%d&M=%d&T=%d", &H, &M, &T); // For example: H=6&M=57&T=0
+              if (res == 3)
               {
                 clockTime[0] = H;
                 clockTime[1] = M;
+                daylightSavingTime = T;
+                evenOdd = M % 2;
                 initializingDone = true;
               }
               break;
             case RGBSITE:
               int R, G, B;
-              res = sscanf(post, "R=%d&G=%d&B=%d", &R, &G, &B);
-
+              res = sscanf(post, "R=%d&G=%d&B=%d", &R, &G, &B); // For example: R=1&G=2&B=3
               if (res == 3)
               {
                 setRGB(R, G, B);
@@ -326,7 +329,11 @@ time_t getNtpTime() {
       time_t secsSince1900 = highWord << 16 | lowWord;
       // convert to epoch time by adding 70 years
       time_t secsSince1970 = secsSince1900 - 2208988800UL;
-      return secsSince1970 + TIMEZONEOFFSET;
+      if (daylightSavingTime)
+        return secsSince1970 + TIMEZONEOFFSET * SECS_PER_HOUR - SECS_PER_HOUR ;
+      else
+        return secsSince1970 + TIMEZONEOFFSET * SECS_PER_HOUR;
+
     }
   }
   Serial.println(F("No NTP Response :-("));
