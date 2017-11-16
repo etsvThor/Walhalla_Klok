@@ -42,6 +42,7 @@ bool daylightSavingTime = false;
 // A UDP instance to let us send and receive packets over UDP
 EthernetUDP Udp;
 EthernetServer server(80);
+EthernetClient client;
 File webFile;
 
 void setup()
@@ -169,7 +170,7 @@ void clockTrigger() {
 }
 
 void webServer(uint8_t siteNumber) {
-  EthernetClient client = server.available(); // try to get client
+  client = server.available(); // try to get client
 
   if (client) { // got client?
     time_t timeout = millis() +  CONNECTIONTIMOUT;
@@ -200,7 +201,7 @@ void webServer(uint8_t siteNumber) {
           {
             case BOOTSITE:
               int H, M, T;
-              res = sscanf(post, "H=%d&M=%d&T=%d", &H, &M, &T); // For example: H=6&M=57&T=0
+              res = sscanf_P(post, PSTR("H=%d&M=%d&T=%d"), &H, &M, &T); // For example: H=6&M=57&T=0
               if (res == 3)
               {
                 clockTime[0] = H;
@@ -212,7 +213,7 @@ void webServer(uint8_t siteNumber) {
               break;
             case RGBSITE:
               int R, G, B;
-              res = sscanf(post, "R=%d&G=%d&B=%d", &R, &G, &B); // For example: R=1&G=2&B=3
+              res = sscanf_P(post, PSTR("R=%d&G=%d&B=%d"), &R, &G, &B); // For example: R=1&G=2&B=3
               if (res == 3)
               {
                 setRGB(R, G, B);
@@ -222,13 +223,7 @@ void webServer(uint8_t siteNumber) {
 
           // send a standard http response header
           webFile = SD.open(F("http.txt"));
-
-          if (webFile) {
-            while (webFile.available()) {
-              client.write(webFile.read()); // send web page to client
-            }
-            webFile.close();
-          }
+          writeFile();
 
           // send web page
           switch (siteNumber)
@@ -240,12 +235,8 @@ void webServer(uint8_t siteNumber) {
               webFile = SD.open(F("index.htm"));        // open web page file
               break;
           }
-          if (webFile) {
-            while (webFile.available()) {
-              client.write(webFile.read()); // send web page to client
-            }
-            webFile.close();
-          }
+          writeFile();
+          
           canEndConnection = true;
         }
         else if (c == '\n') {
@@ -263,6 +254,15 @@ void webServer(uint8_t siteNumber) {
         client.stop();
       }
     }
+  }
+}
+
+void writeFile() {
+  if (webFile) {
+    while (webFile.available()) {
+      client.write(webFile.read()); // send web page to client
+    }
+    webFile.close();
   }
 }
 
