@@ -169,6 +169,8 @@ void clockTrigger() {
   }
 }
 
+String gettxt = String(50); //string for fetching data from address
+
 void webServer(uint8_t siteNumber) {
   client = server.available(); // try to get client
 
@@ -180,7 +182,11 @@ void webServer(uint8_t siteNumber) {
     while (client.status() != 0) { //client.connected() is not reliable apparently, use client.status() != 0 instead
       if (client.available()) { // client data available to read
         char c = client.read(); // read 1 byte (character) from client
-        Serial.write(c);
+        //Serial.write(c);
+
+        if (gettxt.length() < 50) {
+          gettxt += c;
+        }
 
         // if you've gotten to the end of the line (received a newline
         // character) and the line is blank, the http request has ended,
@@ -221,22 +227,30 @@ void webServer(uint8_t siteNumber) {
               break;
           }
 
-          // send a standard http response header
-          webFile = SD.open(F("http.txt"));
+          if (gettxt.substring(5, 12) == "favicon") {
+            webFile = SD.open(F("httpfav.txt"));
+            writeFile();
+            webFile = SD.open(F("favicon.ico"));
+          }
+          else {
+            // send a standard http response header
+            webFile = SD.open(F("http.txt"));
+            writeFile();
+
+            // send web page
+            switch (siteNumber)
+            {
+              case BOOTSITE:
+                webFile = SD.open(F("boot.htm"));        // open web page file
+                break;
+              case RGBSITE:
+                webFile = SD.open(F("index.htm"));        // open web page file
+                break;
+            }
+          }
+          gettxt = "";
           writeFile();
 
-          // send web page
-          switch (siteNumber)
-          {
-            case BOOTSITE:
-              webFile = SD.open(F("boot.htm"));        // open web page file
-              break;
-            case RGBSITE:
-              webFile = SD.open(F("index.htm"));        // open web page file
-              break;
-          }
-          writeFile();
-          
           canEndConnection = true;
         }
         else if (c == '\n') {
@@ -252,6 +266,7 @@ void webServer(uint8_t siteNumber) {
       {
         while (client.read() > 0); // client.stop() can misbehave if the rx buffer isn't empty
         client.stop();
+        Serial.println(F("CONNECTION STOPPED!!"));
       }
     }
   }
@@ -343,7 +358,7 @@ time_t getNtpTime() {
 }
 
 // send an NTP request to the time server at the given address
-void sendNTPpacket(IPAddress& address)
+void sendNTPpacket(IPAddress & address)
 {
   // set all bytes in the buffer to 0
   memset(packetBuffer, 0, NTP_PACKET_SIZE);
