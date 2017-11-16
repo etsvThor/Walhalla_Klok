@@ -46,7 +46,7 @@ File webFile;
 
 void setup()
 {
-   // deselect Ethernet chip on SPI bus
+  // deselect Ethernet chip on SPI bus
   pinMode(ETH_CS, OUTPUT);
   digitalWrite(ETH_CS, HIGH);
   pinMode(TRIGGER1, OUTPUT);
@@ -73,13 +73,12 @@ void setup()
   Serial.println(F("SD initialization done."));
 
   // check for index.htm file
-  if (!SD.exists("index.htm")) {
+  if (!SD.exists(F("index.htm"))) {
     Serial.println(F("ERROR - Can't find index.htm file!"));
     setRGB(255, 0, 255); // Set purple on SD card error
     while (true);
   }
   Serial.println(F("SUCCESS - Found index.htm file."));
-
 
   Serial.println(F("Initializing Ethernet"));
   if (Ethernet.begin(mac) == 0) {  // start Ethernet and UDP
@@ -230,7 +229,7 @@ void webServer(uint8_t siteNumber) {
             }
             webFile.close();
           }
-         
+
           // send web page
           switch (siteNumber)
           {
@@ -275,7 +274,6 @@ void timeCheck() {
   if (clockTime[0] >= 13)
     clockTime[0] = 1;
 }
-
 
 void digitalClockDisplay() {
   // digital clock display of the time
