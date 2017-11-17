@@ -1,6 +1,7 @@
 #include <SD.h>
 #include <Ethernet.h>
 #include <TimeLib.h>
+#include <utility/w5100.h>
 
 #define PWM_R     5
 #define PWM_G     9
@@ -44,6 +45,7 @@ EthernetUDP Udp;
 EthernetServer server(80);
 EthernetClient client;
 File webFile;
+byte socketStat[MAX_SOCK_NUM];
 
 void setup()
 {
@@ -116,6 +118,7 @@ void loop()
     if (now() != prevDisplay) { //update the display only if time has changed
       prevDisplay = now();
       digitalClockDisplay();
+      ShowSockStatus();
     }
   }
   else
@@ -166,6 +169,30 @@ void clockTrigger() {
       else if (clockTime[0] == 6 && clockTime[1] == 40) setRGB(255, 0, 0);
       else if (clockTime[0] == 7 && clockTime[1] == 0)  setRGB(0, 0, 0);
     }
+  }
+}
+
+void ShowSockStatus()
+{
+  for (int i = 0; i < MAX_SOCK_NUM; i++) {
+    Serial.print(F("Socket#"));
+    Serial.print(i);
+    uint8_t s = W5100.readSnSR(i);
+    socketStat[i] = s;
+    Serial.print(F(":0x"));
+    Serial.print(s, 16);
+    Serial.print(F(" "));
+    Serial.print(W5100.readSnPORT(i));
+    Serial.print(F(" D:"));
+    uint8_t dip[4];
+    W5100.readSnDIPR(i, dip);
+    for (int j = 0; j < 4; j++) {
+      Serial.print(dip[j], 10);
+      if (j < 3) Serial.print(".");
+    }
+    Serial.print(F("("));
+    Serial.print(W5100.readSnDPORT(i));
+    Serial.println(F(")"));
   }
 }
 
