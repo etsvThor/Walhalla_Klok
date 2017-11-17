@@ -119,6 +119,7 @@ void loop()
       prevDisplay = now();
       digitalClockDisplay();
       ShowSockStatus();
+      closeSockets();
     }
   }
   else
@@ -295,6 +296,14 @@ void webServer(uint8_t siteNumber) {
         client.stop();
         Serial.println(F("CONNECTION STOPPED!!"));
       }
+    }
+  }
+}
+
+void closeSockets() {
+  for(int i = 0; i < 4; i++) {  
+    if(W5100.readSnSR(i) == 0x17) {
+      W5100.writeSnCR(i, Sock_CLOSE);
     }
   }
 }
