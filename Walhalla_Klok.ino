@@ -306,9 +306,19 @@ void webServer(uint8_t siteNumber) {
 }
 
 void closeSockets() {
-  for(int i = 0; i < 4; i++) {  
-    if(W5100.readSnSR(i) == 0x17) {
-      W5100.writeSnCR(i, Sock_CLOSE);
+  uint8_t sockCounter = 0;
+  // Check how many sockets are stuck
+  for (int i = 0; i < 4; i++) {
+    if (W5100.readSnSR(i) == 0x17) {
+      sockCounter++;
+    }
+  }
+  // Force close them all if enough are stuck
+  if (sockCounter >= 3) {
+  for (int i = 0; i < 4; i++) {
+      if (W5100.readSnSR(i) == 0x17) {
+        W5100.writeSnCR(i, Sock_CLOSE);
+      }
     }
   }
 }
