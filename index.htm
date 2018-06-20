@@ -1,9 +1,17 @@
 <!DOCTYPE HTML>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<link rel="stylesheet" href="style.css">
 <title>Clock RGB control</title>
+<body>
 <h1>Clock RGB control</h1>
+<div>
 <form method='post' name='RGB'>
-R <input type='number' name='R' min='0' max='255' value='0'><br>
-G <input type='number' name='G' min='0' max='255' value='0'><br>
-B <input type='number' name='B' min='0' max='255' value='0'><br>
-<input type='submit'>
+<table>
+<tr><td>R</td><td><input type='number' id='R' name='R' min='0' max='255' value='0'></td></tr>
+<tr><td>G</td><td><input type='number' id='G' name='G' min='0' max='255' value='0'></td></tr>
+<tr><td>B</td><td><input type='number' id='B' name='B' min='0' max='255' value='0'></td></tr>
+</table>
+<button type='submit'>Submit</button>
 </form>
+</div>
+</body>
