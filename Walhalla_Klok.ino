@@ -260,6 +260,11 @@ void webServer(uint8_t siteNumber) {
             writeFile();
             webFile = SD.open(F("favicon.ico"));
           }
+          else if (gettxt.substring(5, 10) == "style") {
+            webFile = SD.open(F("httpcss.txt"));
+            writeFile();
+            webFile = SD.open(F("style.css"));
+          }
           else {
             // send a standard http response header
             webFile = SD.open(F("http.txt"));
