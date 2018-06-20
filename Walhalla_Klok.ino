@@ -383,7 +383,7 @@ time_t getNtpTime() {
       // convert to epoch time by adding 70 years
       time_t secsSince1970 = secsSince1900 - 2208988800UL;
       if (daylightSavingTime)
-        return secsSince1970 + TIMEZONEOFFSET * SECS_PER_HOUR - SECS_PER_HOUR ;
+        return secsSince1970 + TIMEZONEOFFSET * SECS_PER_HOUR + SECS_PER_HOUR ;
       else
         return secsSince1970 + TIMEZONEOFFSET * SECS_PER_HOUR;
 
