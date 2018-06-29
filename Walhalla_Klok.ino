@@ -35,6 +35,7 @@ uint8_t buf[32];  // Larger buffer is faster transfer speeds, at the cost of ram
 */
 byte mac[] = {0x90, 0xA2, 0xDA, 0x0D, 0x0D, 0x1C};
 IPAddress timeServer(193, 92, 150, 3); 		// time.nist.gov NTP server
+char gettxt[30];                          // string for fetching data from address
 byte packetBuffer[NTP_PACKET_SIZE]; 			// buffer to hold incoming and outgoing packets
 uint8_t clockTime[2] = {12, 0};
 
@@ -202,8 +203,6 @@ void ShowSockStatus()
   }
 }
 
-String gettxt = String(50); //string for fetching data from address
-
 void webServer(uint8_t siteNumber) {
   client = server.available(); // try to get client
 
@@ -212,13 +211,15 @@ void webServer(uint8_t siteNumber) {
     // an http request ends with a blank line
     boolean currentLineIsBlank = true;
     boolean canEndConnection = false;
+    uint8_t idx = 0;
     while (client.status() != 0) { //client.connected() is not reliable apparently, use client.status() != 0 instead
       if (client.available()) { // client data available to read
         char c = client.read(); // read 1 byte (character) from client
         //Serial.write(c);
 
-        if (gettxt.length() < 50) {
-          gettxt += c;
+        if (idx < sizeof(gettxt)) {
+          gettxt[idx] = c;
+          idx++;
         }
 
         // if you've gotten to the end of the line (received a newline
@@ -260,12 +261,12 @@ void webServer(uint8_t siteNumber) {
               break;
           }
 
-          if (gettxt.substring(5, 12) == "favicon") {
+          if (!memcmp_P(&gettxt[5], PSTR("favicon"), 7)) {
             pf_open("HTTPFAV.TXT");
             writeFile();
             pf_open("FAVICON.ICO");
           }
-          else if (gettxt.substring(5, 10) == "style") {
+          else if (!memcmp_P(&gettxt[5], PSTR("style"), 5)) {
             pf_open("HTTPCSS.TXT");
             writeFile();
             pf_open("STYLE.CSS");
@@ -286,7 +287,6 @@ void webServer(uint8_t siteNumber) {
                 break;
             }
           }
-          gettxt = "";
           writeFile();
 
           canEndConnection = true;
@@ -320,7 +320,7 @@ void closeSockets() {
   }
   // Force close them all if enough are stuck
   if (sockCounter >= 3) {
-  for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
       if (W5100.readSnSR(i) == 0x17) {
         W5100.writeSnCR(i, Sock_CLOSE);
       }
