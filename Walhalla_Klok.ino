@@ -228,41 +228,42 @@ void webServer(uint8_t siteNumber) {
         // so you can send a reply
         if (c == '\n' && currentLineIsBlank) {
 
-          // Here is where the POST data is
-          int i;
-          for (i = 0; client.available() && i < sizeof(post) - 1; i++) // Fill except last byte
-          {
-            post[i] = client.read();
-          }
-          post[i] = '\0'; // Properly terminate string
-          Serial.println(post);
+          if (!memcmp_P(&gettxt[0], PSTR("POST"), 4)) { // Only process post when received
+            // Here is where the POST data is
+            int i;
+            for (i = 0; client.available() && i < sizeof(post) - 1; i++) // Fill except last byte
+            {
+              post[i] = client.read();
+            }
+            post[i] = '\0'; // Properly terminate string
+            Serial.println(post);
 
-          int res;
-          switch (siteNumber)
-          {
-            case BOOTSITE:
-              int H, M, T;
-              res = sscanf_P(post, PSTR("H=%d&M=%d&T=%d"), &H, &M, &T); // For example: H=6&M=57&T=0
-              if (res == 3)
-              {
-                clockTime[0] = H;
-                clockTime[1] = M;
-                daylightSavingTime = T;
-                evenOdd = M % 2;
-                initializingDone = true;
-                siteNumber = RGBSITE;
-              }
-              break;
-            case RGBSITE:
-              int R, G, B;
-              res = sscanf_P(post, PSTR("R=%d&G=%d&B=%d"), &R, &G, &B); // For example: R=1&G=2&B=3
-              if (res == 3)
-              {
-                setRGB(R, G, B);
-              }
-              break;
+            int res;
+            switch (siteNumber)
+            {
+              case BOOTSITE:
+                int H, M, T;
+                res = sscanf_P(post, PSTR("H=%d&M=%d&T=%d"), &H, &M, &T); // For example: H=6&M=57&T=0
+                if (res == 3)
+                {
+                  clockTime[0] = H;
+                  clockTime[1] = M;
+                  daylightSavingTime = T;
+                  evenOdd = M % 2;
+                  initializingDone = true;
+                  siteNumber = RGBSITE;
+                }
+                break;
+              case RGBSITE:
+                int R, G, B;
+                res = sscanf_P(post, PSTR("R=%d&G=%d&B=%d"), &R, &G, &B); // For example: R=1&G=2&B=3
+                if (res == 3)
+                {
+                  setRGB(R, G, B);
+                }
+                break;
+            }
           }
-
           if (!memcmp_P(&gettxt[5], PSTR("favicon"), 7)) {
             pf_open("HTTPFAV.TXT");
             writeFile();
