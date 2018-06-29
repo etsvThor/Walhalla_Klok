@@ -35,7 +35,8 @@ uint8_t buf[32];  // Larger buffer is faster transfer speeds, at the cost of ram
 */
 byte mac[] = {0x90, 0xA2, 0xDA, 0x0D, 0x0D, 0x1C};
 IPAddress timeServer(193, 92, 150, 3); 		// time.nist.gov NTP server
-char gettxt[30];                          // string for fetching data from address
+char gettxt[30];                          // string for fetching get data from address
+char post[20];                            // string for fetching post data from address
 byte packetBuffer[NTP_PACKET_SIZE]; 			// buffer to hold incoming and outgoing packets
 uint8_t clockTime[2] = {12, 0};
 
@@ -228,13 +229,13 @@ void webServer(uint8_t siteNumber) {
         if (c == '\n' && currentLineIsBlank) {
 
           // Here is where the POST data is
-          char post[20] = {};
-          for (int i = 0; client.available() && i < 20; i++)
+          int i;
+          for (i = 0; client.available() && i < sizeof(post) - 1; i++) // Fill except last byte
           {
             post[i] = client.read();
-            Serial.write(post[i]);
           }
-          Serial.println();
+          post[i] = '\0'; // Properly terminate string
+          Serial.println(post);
 
           int res;
           switch (siteNumber)
@@ -249,6 +250,7 @@ void webServer(uint8_t siteNumber) {
                 daylightSavingTime = T;
                 evenOdd = M % 2;
                 initializingDone = true;
+                siteNumber = RGBSITE;
               }
               break;
             case RGBSITE:
