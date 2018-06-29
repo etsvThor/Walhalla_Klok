@@ -1,7 +1,13 @@
-#include <SD.h>
 #include <Ethernet.h>
 #include <TimeLib.h>
 #include <utility/w5100.h>
+#include "PetitFS.h"
+#include "PetitSerial.h"
+
+PetitSerial PS;
+#define Serial PS // Replace standard serial calls
+FATFS webFile;    // File system object
+uint8_t buf[32];  // Larger buffer is faster transfer speeds, at the cost of ram
 
 #define PWM_R     5
 #define PWM_G     9
@@ -44,7 +50,6 @@ bool daylightSavingTime = false;
 EthernetUDP Udp;
 EthernetServer server(80);
 EthernetClient client;
-File webFile;
 byte socketStat[MAX_SOCK_NUM];
 
 void setup()
@@ -67,7 +72,7 @@ void setup()
   Serial.begin(115200); // Only enable when debugging
   Serial.println(F("Initializing SD card"));
 
-  if (!SD.begin(SD_CS)) {
+  if (pf_mount(&webFile)) {
     Serial.println(F("SD initialization failed!"));
     // no point in carrying on, so do nothing forevermore:
     setRGB(255, 0, 255); // Set purple on SD card error
@@ -76,12 +81,12 @@ void setup()
   Serial.println(F("SD initialization done."));
 
   // check for index.htm file
-  if (!SD.exists(F("index.htm"))) {
-    Serial.println(F("ERROR - Can't find index.htm file!"));
+  if (pf_open("BOOT.HTM")) {
+    Serial.println(F("ERROR - Can't find BOOT.HTM file!"));
     setRGB(255, 0, 255); // Set purple on SD card error
     while (true);
   }
-  Serial.println(F("SUCCESS - Found index.htm file."));
+  Serial.println(F("SUCCESS - Found BOOT.HTM file."));
 
   Serial.println(F("Initializing Ethernet"));
   if (Ethernet.begin(mac) == 0) {  // start Ethernet and UDP
@@ -256,28 +261,28 @@ void webServer(uint8_t siteNumber) {
           }
 
           if (gettxt.substring(5, 12) == "favicon") {
-            webFile = SD.open(F("httpfav.txt"));
+            pf_open("HTTPFAV.TXT");
             writeFile();
-            webFile = SD.open(F("favicon.ico"));
+            pf_open("FAVICON.ICO");
           }
           else if (gettxt.substring(5, 10) == "style") {
-            webFile = SD.open(F("httpcss.txt"));
+            pf_open("HTTPCSS.TXT");
             writeFile();
-            webFile = SD.open(F("style.css"));
+            pf_open("STYLE.CSS");
           }
           else {
             // send a standard http response header
-            webFile = SD.open(F("http.txt"));
+            pf_open("HTTP.TXT");
             writeFile();
 
             // send web page
             switch (siteNumber)
             {
               case BOOTSITE:
-                webFile = SD.open(F("boot.htm"));        // open web page file
+                pf_open("BOOT.HTM");        // open web page file
                 break;
               case RGBSITE:
-                webFile = SD.open(F("index.htm"));        // open web page file
+                pf_open("INDEX.HTM");        // open web page file
                 break;
             }
           }
@@ -324,11 +329,11 @@ void closeSockets() {
 }
 
 void writeFile() {
-  if (webFile) {
-    while (webFile.available()) {
-      client.write(webFile.read()); // send web page to client
-    }
-    webFile.close();
+  uint16_t len;
+  while (true) {
+    pf_read(buf, sizeof(buf), &len);
+    if (len == 0) break;
+    client.write(buf, len);
   }
 }
 
