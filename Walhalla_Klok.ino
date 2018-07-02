@@ -1,4 +1,5 @@
 #include <Ethernet.h>
+#include <EEPROM.h>
 #include <TimeLib.h>
 #include <utility/w5100.h>
 #include "PetitFS.h"
@@ -36,7 +37,9 @@ uint8_t buf[32];  // Larger buffer is faster transfer speeds, at the cost of ram
 byte mac[] = {0x90, 0xA2, 0xDA, 0x0D, 0x0D, 0x1C};
 IPAddress timeServer(193, 92, 150, 3); 		// time.nist.gov NTP server
 char gettxt[30];                          // string for fetching get data from address
-char post[20];                            // string for fetching post data from address
+char post[51];                            // string for fetching post data from address
+char tmp1[20];                            // temporary variables for use troughout the program
+char tmp2[20];                            // temporary variables for use troughout the program
 byte packetBuffer[NTP_PACKET_SIZE]; 			// buffer to hold incoming and outgoing packets
 uint8_t clockTime[2] = {12, 0};
 
@@ -216,7 +219,6 @@ void webServer(uint8_t siteNumber) {
     while (client.status() != 0) { //client.connected() is not reliable apparently, use client.status() != 0 instead
       if (client.available()) { // client data available to read
         char c = client.read(); // read 1 byte (character) from client
-        //Serial.write(c);
 
         if (idx < sizeof(gettxt)) {
           gettxt[idx] = c;
@@ -243,7 +245,7 @@ void webServer(uint8_t siteNumber) {
             {
               case BOOTSITE:
                 int H, M, T;
-                res = sscanf_P(post, PSTR("H=%d&M=%d&T=%d"), &H, &M, &T); // For example: H=6&M=57&T=0
+                res = sscanf_P(post, PSTR("H=%2d&M=%2d&T=%1d"), &H, &M, &T); // For example: H=6&M=57&T=0
                 if (res == 3)
                 {
                   clockTime[0] = H;
@@ -255,11 +257,34 @@ void webServer(uint8_t siteNumber) {
                 }
                 break;
               case RGBSITE:
-                int R, G, B;
-                res = sscanf_P(post, PSTR("R=%d&G=%d&B=%d"), &R, &G, &B); // For example: R=1&G=2&B=3
-                if (res == 3)
-                {
-                  setRGB(R, G, B);
+                if (!memcmp_P(&gettxt[6], PSTR("setup"), 5)) {
+                  memset(tmp1, 0, sizeof(tmp1));
+                  memset(tmp2, 0, sizeof(tmp2));
+                  res = sscanf_P(post, PSTR("LNK=%20[^&]&PW=%20s"), &tmp1, &tmp2);
+                  Serial.println(res);
+                  if (res == 2) {
+                    char password[20];
+                    for (int i = 0; i < 20; i++) {
+                      password[i] = EEPROM.read(i);
+                    }
+                    if (!memcmp(password, tmp2, 20)) {
+                      Serial.println(F("Correct Password"));
+                      for (int i = 0; i < 20; i++) {
+                        EEPROM.update(20 + i, tmp1[i]); // Write new bonus link
+                      }
+                    }
+                    else {
+                      Serial.println(F("Incorrect Password"));
+                    }
+                  }
+                }
+                else {
+                  int R, G, B;
+                  res = sscanf_P(post, PSTR("R=%3d&G=%3d&B=%3d"), &R, &G, &B); // For example: R=1&G=2&B=3
+                  if (res == 3)
+                  {
+                    setRGB(R, G, B);
+                  }
                 }
                 break;
             }
@@ -286,7 +311,34 @@ void webServer(uint8_t siteNumber) {
                 pf_open("BOOT.HTM");        // open web page file
                 break;
               case RGBSITE:
-                pf_open("INDEX.HTM");        // open web page file
+                pf_open("INDEX.HTM");         // Open index.htm by default for speed
+
+                if (gettxt[5] != ' ') {       // If url is non-default, scan for other files
+                  if (!memcmp_P(&gettxt[5], PSTR("576"), 3)) {
+                    pf_open("KUTSJRZ.HTM");        // open web page file
+                  }
+                  else if (!memcmp_P(&gettxt[5], PSTR("setup"), 5)) {
+                    pf_open("SETUP.HTM");        // open web page file
+                  }
+                  else if (!memcmp_P(&gettxt[5], PSTR("stats"), 5)) {
+                    pf_open("STATS.HTM");        // open web page file
+                  }
+                  else { // Check for bonus link
+                    memset(tmp1, 0, sizeof(tmp1));
+                    memset(tmp2, 0, sizeof(tmp2));
+
+                    for (int i = 0; i < 20 && gettxt[5 + i] != ' '; i++) {  // Extract link from get variable
+                      tmp2[i] = gettxt[5 + i];
+                    }
+                    for (int i = 0; i < 20; i++) {                          // Read link from eeprom
+                      tmp1[i] = EEPROM.read(20 + i);
+                    }
+                    if (!memcmp(tmp1, tmp2, 20)) {                // Compare and activate if correct
+                      Serial.println("Correct bonus link");
+                      pf_open("BONUS.HTM");        // open web page file
+                    }
+                  }
+                }
                 break;
             }
           }
