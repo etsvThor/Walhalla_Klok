@@ -57,6 +57,8 @@ EthernetServer server(80);
 EthernetClient client;
 byte socketStat[MAX_SOCK_NUM];
 
+void(* resetFunc) (void) = 0;//declare reset function at address 0
+
 void setup()
 {
   // deselect Ethernet chip on SPI bus
@@ -128,7 +130,7 @@ void loop()
     if (now() != prevDisplay) { //update the display only if time has changed
       prevDisplay = now();
       digitalClockDisplay();
-      ShowSockStatus();
+      //ShowSockStatus();
       closeSockets();
     }
   }
@@ -219,7 +221,7 @@ void webServer(uint8_t siteNumber) {
     while (client.status() != 0) { //client.connected() is not reliable apparently, use client.status() != 0 instead
       if (client.available()) { // client data available to read
         char c = client.read(); // read 1 byte (character) from client
-
+        Serial.print(c);
         if (idx < sizeof(gettxt)) {
           gettxt[idx] = c;
           idx++;
@@ -258,23 +260,46 @@ void webServer(uint8_t siteNumber) {
                 break;
               case RGBSITE:
                 if (!memcmp_P(&gettxt[6], PSTR("setup"), 5)) {
-                  memset(tmp1, 0, sizeof(tmp1));
-                  memset(tmp2, 0, sizeof(tmp2));
-                  res = sscanf_P(post, PSTR("LNK=%20[^&]&PW=%20s"), &tmp1, &tmp2);
-                  Serial.println(res);
-                  if (res == 2) {
-                    char password[20];
-                    for (int i = 0; i < 20; i++) {
-                      password[i] = EEPROM.read(i);
-                    }
-                    if (!memcmp(password, tmp2, 20)) {
-                      Serial.println(F("Correct Password"));
+                  if (post[2] == 'S') {
+                    memset(tmp1, 0, sizeof(tmp1));
+                    memset(tmp2, 0, sizeof(tmp2));
+                    res = sscanf_P(post, PSTR("T=%*c&LNK=%20[^&]&PW=%20s"), &tmp1, &tmp2);
+                    if (res == 2) {
+                      char password[20];
                       for (int i = 0; i < 20; i++) {
-                        EEPROM.update(20 + i, tmp1[i]); // Write new bonus link
+                        password[i] = EEPROM.read(i);
+                      }
+                      if (!memcmp(password, tmp2, 20)) {
+                        setRGB(0, 255, 0); // Green on success
+                        Serial.println(F("Correct Password"));
+                        for (int i = 0; i < 20; i++) {
+                          EEPROM.update(20 + i, tmp1[i]); // Write new bonus link
+                        }
+                      }
+                      else {
+                        setRGB(255, 0, 0); // Red on failure
+                        Serial.println(F("Incorrect Password"));
                       }
                     }
-                    else {
-                      Serial.println(F("Incorrect Password"));
+                  }
+                  else if (post[2] == 'R') {
+                    memset(tmp2, 0, sizeof(tmp2));
+                    res = sscanf_P(post, PSTR("T=%*c&PW=%20s"), &tmp2);
+                    if (res == 1) {
+                      char password[20];
+                      for (int i = 0; i < 20; i++) {
+                        password[i] = EEPROM.read(i);
+                      }
+                      if (!memcmp(password, tmp2, 20)) {
+                        setRGB(0, 255, 0); // Green on success
+                        Serial.println(F("Correct Password"));
+                        Serial.println(F("Correct Password"));
+                        resetFunc();
+                      }
+                      else {
+                        setRGB(255, 0, 0); // Red on failure
+                        Serial.println(F("Incorrect Password"));
+                      }
                     }
                   }
                 }
@@ -334,8 +359,15 @@ void webServer(uint8_t siteNumber) {
                       tmp1[i] = EEPROM.read(20 + i);
                     }
                     if (!memcmp(tmp1, tmp2, 20)) {                // Compare and activate if correct
-                      Serial.println("Correct bonus link");
                       pf_open("BONUS.HTM");        // open web page file
+                      Serial.println("Activating Bonus");
+                      timeInitialized = false;
+
+                      adjustTime(-500);
+                      clockTrigger();
+                      delay(125);
+                      clockTrigger();
+                      adjustTime(500);
                     }
                   }
                 }

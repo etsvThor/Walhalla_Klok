@@ -6,12 +6,24 @@
 <h1>Clock Setup</h1>
 <div>
 <form method='post' name='setup'>
+<input type="hidden" name="T" value="S">
 <table>
 <tr><td>Bonus link</td><td><input type='text' name='LNK' maxlength="20"></td></tr>
-<tr><td>Password</td><td><input type='text' name='PW' maxlength="20"></td></tr>
+<tr><td>Password</td><td><input type='password' name='PW' maxlength="20"></td></tr>
 </table>
 Input 20 characters max per field!
-<button type='submit'>Submit</button>
+<button type='submit'>Change link</button>
+</form>
+</div>
+
+<div >
+<form method='post' name='setup'>
+<input type="hidden" name="T" value="R">
+<table>
+<tr><td>Password</td><td><input type='password' name='PW' maxlength="20"></td></tr>
+</table>
+Input 20 characters max per field!
+<button type='submit'>Reset</button>
 </form>
 </div>
 </body>
